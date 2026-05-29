@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>IL Legislator Contact Tracker — TS</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --blue: #1a3a5c; --blue-mid: #2d6a9f;
+    --dem: #1a5fa8; --rep: #b71c1c;
+    --check-green: #1b7a3e; --check-bg: #e6f4ec;
+    --row-alt: #f4f7fb; --border: #d0dcea;
+    --text: #0d1b2a; --muted: #5a6e82; --white: #ffffff;
+  }
+  body { font-family: -apple-system, "SF Pro Text", sans-serif; background: #f0f4f8; color: var(--text); min-height: 100vh; }
+  .sticky-top { position: sticky; top: 0; z-index: 100; background: var(--blue); }
+  .header { padding: 14px 16px 10px; }
+  .header h1 { color: white; font-size: 15px; font-weight: 700; }
+  .header .sub { color: rgba(255,255,255,0.65); font-size: 12px; margin-top: 2px; }
+  .controls { padding: 0 12px 10px; display: flex; gap: 8px; }
+  .controls input[type=search] { flex: 1; padding: 10px 12px; font-size: 16px; border: none; border-radius: 10px; background: rgba(255,255,255,0.15); color: white; outline: none; -webkit-appearance: none; }
+  .controls input[type=search]::placeholder { color: rgba(255,255,255,0.5); }
+  .controls select { padding: 10px 8px; font-size: 14px; border: none; border-radius: 10px; background: rgba(255,255,255,0.15); color: white; outline: none; -webkit-appearance: none; appearance: none; min-width: 70px; text-align: center; }
+  .controls select option { background: #1a3a5c; color: white; }
+  .progress-bar-wrap { padding: 0 12px 10px; }
+  .progress-track { background: rgba(255,255,255,0.2); border-radius: 100px; height: 6px; overflow: hidden; }
+  .progress-fill { background: #4caf7d; height: 100%; border-radius: 100px; transition: width 0.3s ease; width: 0%; }
+  .progress-label { color: rgba(255,255,255,0.7); font-size: 11px; margin-top: 4px; text-align: right; }
+  .section-hdr { background: var(--blue-mid); color: white; padding: 9px 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+  .section-hdr .sect-count { font-weight: 400; opacity: 0.8; font-size: 11px; letter-spacing: 0; text-transform: none; }
+  .row { display: flex; align-items: center; padding: 0 14px; min-height: 54px; border-bottom: 1px solid var(--border); background: var(--white); cursor: pointer; gap: 14px; user-select: none; -webkit-user-select: none; }
+  .row:nth-child(even) { background: var(--row-alt); }
+  .row.checked { background: var(--check-bg) !important; }
+  .row:active { opacity: 0.75; }
+  .cb { width: 30px; height: 30px; border: 2.5px solid var(--blue-mid); border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; background: white; }
+  .row.checked .cb { background: var(--check-green); border-color: var(--check-green); }
+  .cb-check { display: none; color: white; font-size: 18px; line-height: 1; font-weight: 700; }
+  .row.checked .cb-check { display: block; }
+  .name { flex: 1; font-size: 18px; font-weight: 500; color: var(--text); }
+  .row.checked .name { color: var(--check-green); text-decoration: line-through; text-decoration-color: rgba(27,122,62,0.4); }
+  .dist { font-size: 13px; color: var(--muted); min-width: 32px; text-align: right; }
+  .party { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: white; flex-shrink: 0; }
+  .party.D { background: var(--dem); }
+  .party.R { background: var(--rep); }
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 16px; }
+  .reset-btn { background: none; border: 1px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.7); border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .user-tag { background: rgba(255,255,255,0.25); color: white; border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; }
+</style>
+</head>
+<body>
+<div class="sticky-top">
+  <div class="header">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <h1>IL Legislator Contact Tracker</h1>
+        <div class="sub">104th General Assembly &mdash; <span class="user-tag">TS</span></div>
+      </div>
+      <button class="reset-btn" onclick="resetAll()">Reset</button>
+    </div>
+  </div>
+  <div class="controls">
+    <input type="search" id="search" placeholder="Search name..." oninput="render()" autocomplete="off" autocorrect="off" spellcheck="false">
+    <select id="fil-chamber" onchange="render()">
+      <option value="">Both</option>
+      <option value="S">Senate</option>
+      <option value="H">House</option>
+    </select>
+    <select id="fil-party" onchange="render()">
+      <option value="">All</option>
+      <option value="D">Dem</option>
+      <option value="R">Rep</option>
+    </select>
+    <select id="fil-status" onchange="render()">
+      <option value="">All</option>
+      <option value="done">Done</option>
+      <option value="todo">To do</option>
+    </select>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+    <div class="progress-label" id="prog-label">0 of 177 contacted</div>
+  </div>
+</div>
+<div id="list"></div>
+<script>
+const SENATORS=[["Anderson, Neil",47,"R"],["Aquino, Omar",2,"D"],["Arellano Jr., Li",37,"R"],["Balkema, Chris",53,"R"],["Belt, Christopher",57,"D"],["Bryant, Terri",58,"R"],["Castro, Cristina",22,"D"],["Cervantes, Javier L.",1,"D"],["Chesney, Andrew S.",45,"R"],["Collins, Lakesia",5,"D"],["Cunningham, Bill",18,"D"],["Curran, John F.",41,"R"],["DeWitte, Donald P.",33,"R"],["Edly-Allen, Mary",31,"D"],["Ellman, Laura",21,"D"],["Faraci, Paul",52,"D"],["Feigenholtz, Sara",6,"D"],["Fine, Laura",9,"D"],["Fowler, Dale",59,"R"],["Glowiak Hilton, Suzy",23,"D"],["Guzman, Graciela",20,"D"],["Halpin, Michael W.",36,"D"],["Harmon, Don",39,"D"],["Harris III, Napoleon",15,"D"],["Harriss, Erica",56,"R"],["Hastings, Michael E.",19,"D"],["Hills, Darby A.",26,"R"],["Holmes, Linda",42,"D"],["Hunter, Mattie",3,"D"],["Johnson, Adriane",30,"D"],["Jones III, Emil",14,"D"],["Joyce, Patrick J.",40,"D"],["Koehler, David",46,"D"],["Lewis, Seth",24,"R"],["Lightford, Kimberly A.",4,"D"],["Loughran Cappel, Meg",49,"D"],["Martwick, Robert F.",10,"D"],["McClure, Steve",54,"R"],["Morrison, Julie A.",29,"D"],["Murphy, Laura M.",28,"D"],["Peters, Robert",13,"D"],["Plummer, Jason",55,"R"],["Porfirio, Mike",11,"D"],["Preston, Willie",16,"D"],["Rezin, Sue",38,"R"],["Rose, Chapin",51,"R"],["Simmons, Mike",7,"D"],["Sims Jr., Elgie R.",17,"D"],["Stadelman, Steve",34,"D"],["Syverson, Dave",35,"R"],["Tracy, Jil",50,"R"],["Turner, Doris",48,"D"],["Turner, Sally J.",44,"R"],["Ventura, Rachel",43,"D"],["Villa, Karina",25,"D"],["Villanueva, Celina",12,"D"],["Villivalam, Ram",8,"D"],["Walker, Mark L.",27,"D"],["Wilcox, Craig",32,"R"]];
+const REPS=[["Ammons, Carol",103,"D"],["Andrade Jr., Jaime M.",40,"D"],["Avelar, Dagmara",85,"D"],["Benton, Harry",97,"D"],["Blair-Sherlock, Diane",46,"D"],["Briel, Amy",76,"D"],["Buckner, Kam",26,"D"],["Bunting, Jason R.",106,"R"],["Cabello, John M.",90,"R"],["Canty, Mary Beth",54,"D"],["Cassidy, Kelly M.",14,"D"],["Chung, Sharon",91,"D"],["Cochran, Justin",55,"D"],["Coffey Jr., Michael J.",95,"R"],["Crawford, Michael",31,"D"],["Crespo, Fred",44,"D"],["Croke, Margaret",12,"D"],["Davidsmeyer, C.D.",100,"R"],["Davis, Jed",75,"R"],["Davis, Lisa",32,"D"],["Davis, William",30,"D"],["Deering, Regan",88,"R"],["DeLaRosa, Margaret A.",42,"D"],["Delgado, Eva-Dina",3,"D"],["DeLuca, Anthony",80,"D"],["Deuter, Martha",45,"D"],["Didech, Daniel",59,"D"],["Du Buclet, Kimberly",5,"D"],["Elik, Amy",111,"R"],["Evans Jr., Marcus C.",33,"D"],["Faver Dias, Laura",62,"D"],["Ford, La Shawn K.",8,"D"],["Friess, David",115,"R"],["Fritts, Bradley",74,"R"],["Gabel, Robyn",18,"D"],["Gill, Mary",35,"D"],["Gong-Gershowitz, Jennifer",17,"D"],["Gonzalez Jr., Edgar",23,"D"],["Gordon-Booth, Jehan",92,"D"],["Grant, Amy L.",47,"R"],["Grasse, Nicolle",53,"D"],["Guerrero-Cuellar, Angelica",22,"D"],["Guzzardi, Will",39,"D"],["Haas, Jackie",79,"R"],["Halbrook, Brad",107,"R"],["Hammond, Norine K.",94,"R"],["Hanson, Matt",83,"D"],["Harper, Sonya M.",6,"D"],["Hauter, William E.",87,"R"],["Hernandez, Barbara",50,"D"],["Hernandez, Elizabeth",2,"D"],["Hernandez, Norma",77,"D"],["Hirschauer, Maura",49,"D"],["Hoffman, Jay",113,"D"],["Huynh, Hoan",13,"D"],["Jacobs, Paul",118,"R"],["Jimenez, Lilian",4,"D"],["Johnson, Gregg",72,"D"],["Jones, Thaddeus",29,"D"],["Katz Muhl, Tracy",57,"D"],["Keicher, Jeff",70,"R"],["Kelly, Michael J.",15,"D"],["Kifowit, Stephanie A.",84,"D"],["La Ha, Nicole",82,"R"],["LaPointe, Lindsey",19,"D"],["Lilly, Camille Y.",78,"D"],["Mah, Theresa",24,"D"],["Manley, Natalie A.",98,"D"],["Mason, Joyce",61,"D"],["Mayfield, Rita",60,"D"],["McCombie, Tony M.",89,"R"],["McLaughlin, Martin",52,"R"],["Meier, Charles",109,"R"],["Meyers-Martin, Debbie",38,"D"],["Miller, Chris",101,"R"],["Moeller, Anna",43,"D"],["Moore, Kyle",99,"R"],["Morgan, Bob",58,"D"],["Morris, Yolonda",9,"D"],["Mussman, Michelle",56,"D"],["Ness, Suzanne M.",66,"D"],["Niemerg, Adam M.",102,"R"],["Olickal, Kevin John",16,"D"],["Ortiz, Aaron M.",1,"D"],["Rashid, Abdelnasser",21,"D"],["Reick, Steven",63,"R"],["Rita, Robert",28,"D"],["Rosenthal, Wayne A.",108,"R"],["Ryan, Rick",36,"D"],["Sanalitro, Jennifer",48,"R"],["Scherer, Sue",96,"D"],["Schmidt, Kevin",114,"R"],["Schweizer, Brandun",104,"R"],["Severin, Dave",116,"R"],["Sheehan, Patrick",37,"R"],["Slaughter, Justin",27,"D"],["Smith, Nicholas K.",34,"D"],["Sosnowski, Joe C.",69,"R"],["Spain, Ryan",73,"R"],["Stava, Anne",81,"D"],["Stephens, Brad",20,"R"],["Stuart, Katie",112,"D"],["Swanson, Dan",71,"R"],["Syed, Nabeela",51,"D"],["Tarver II, Curtis J.",25,"D"],["Tipsword, Dennis",105,"R"],["Ugaste, Dan",65,"R"],["Vella, Dave",68,"D"],["Walsh Jr., Lawrence",86,"D"],["Weaver, Travis",93,"R"],["Weber, Tom",64,"R"],["Welch, Emanuel",7,"D"],["West II, Maurice A.",67,"D"],["Wilhour, Blaine",110,"R"],["Williams, Ann M.",11,"D"],["Williams, Jawaharial",10,"D"],["Windhorst, Patrick",117,"R"],["Yang Rohr, Janet",41,"D"]];
+const STORE="il_tracker_TS_v1";
+let checked={};
+function load(){try{checked=JSON.parse(localStorage.getItem(STORE)||"{}");}catch(e){checked={};}}
+function save(){try{localStorage.setItem(STORE,JSON.stringify(checked));}catch(e){}}
+function key(c,n){return c+":"+n;}
+function toggle(k,el){if(checked[k]){delete checked[k];el.classList.remove("checked");}else{checked[k]=1;el.classList.add("checked");}save();updateProgress();}
+function updateProgress(){const total=SENATORS.length+REPS.length;const done=Object.keys(checked).length;const pct=Math.round(done/total*100);document.getElementById("prog-fill").style.width=pct+"%";document.getElementById("prog-label").textContent=done+" of "+total+" contacted";}
+function resetAll(){if(!Object.keys(checked).length)return;if(!confirm("Clear all contact marks?"))return;checked={};save();render();}
+function render(){const q=(document.getElementById("search").value||"").toLowerCase();const fc=document.getElementById("fil-chamber").value;const fp=document.getElementById("fil-party").value;const fs=document.getElementById("fil-status").value;const sections=[{label:"Illinois Senate",chamber:"S",data:SENATORS},{label:"Illinois House of Representatives",chamber:"H",data:REPS}];let html="";for(const sec of sections){if(fc&&fc!==sec.chamber)continue;const filtered=sec.data.filter(([name,dist,party])=>{const k=key(sec.chamber,name);if(q&&!name.toLowerCase().includes(q))return false;if(fp&&party!==fp)return false;if(fs==="done"&&!checked[k])return false;if(fs==="todo"&&checked[k])return false;return true;});if(!filtered.length)continue;html+=`<div class="section-hdr">${sec.label} <span class="sect-count">${filtered.length} shown</span></div>`;filtered.forEach(([name,dist,party])=>{const k=key(sec.chamber,name).replace(/'/g,"\\'");const isChecked=checked[key(sec.chamber,name)]?" checked":"";html+=`<div class="row${isChecked}" onclick="toggle('${k}',this)"><div class="cb"><span class="cb-check">&#10003;</span></div><div class="name">${name}</div><div class="dist">${dist}</div><div class="party ${party}">${party}</div></div>`;});}if(!html)html='<div class="empty">No legislators match your filters.</div>';document.getElementById("list").innerHTML=html;updateProgress();}
+load();render();
+</script>
+</body>
+</html>
